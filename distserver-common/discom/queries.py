@@ -93,7 +93,7 @@ async def bulk_insert_chunks(db: asyncpg.Connection, chunks: list[ChunkRecord]):
 
 async def get_chunk(conn: asyncpg.Connection, chunk_id):
     row = await conn.fetchrow(
-        "Select * from chunks where id = $1",
+        "Select * from chunks where id = $1 AND status='PENDING'",
         chunk_id
     )
     if row is None:

@@ -33,15 +33,17 @@ async def consumer_requests():
                     await update_job(connection, JobStatus.RUNNING.value, chunk.document_id, None, None)
                 success = False
                 for i in range(retry_count):
-                    job_id = await gpu_worker.token_generator.spawn.aio(
-                        source_text=chunk.source_text,
-                        chunk_id=chunk.id,
-                        document_id=chunk.document_id,
-                        text_type=chunk.address["type"],
-                    )
-                    if job_id:
+                    try:
+                        await gpu_worker.token_generator.spawn.aio(
+                            source_text=chunk.source_text,
+                            chunk_id=chunk.id,
+                            document_id=chunk.document_id,
+                            text_type=chunk.address["type"],
+                        )
                         success = True
                         break
+                    except Exception:
+                        success = False
                 if success:
                     await consumer.commit()
                 else:
@@ -50,6 +52,7 @@ async def consumer_requests():
                         kafka_settings.KAFKA_INFERENCE_TOPIC,
                         payload
                     )
+                    await consumer.commit()
             except Exception as e:
                 print(f"Failed to process message at offset {msg.offset}: {e}")
     except Exception as e:
